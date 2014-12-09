@@ -1,3 +1,5 @@
+@import 'fonts';
+
 body{
     position: absolute;
     min-height: 100%;
@@ -7,7 +9,7 @@ body{
     font-size: 16px;
     color: #00ff00;
     background-color: black;
-    font-family: 'Source Code Pro', Courier, mono;
+    font-family: 'Menlo', Menlo, Consolas, monospace;
 }
 
 nav {
@@ -42,6 +44,7 @@ main{
         > .bart{
             display: inline-block;
             text-align: left;
+            font-family: 'Menlo', Menlo, Consolas, monospace;
         }
     }
 }

@@ -1,21 +1,35 @@
-cowsay -l > /dev/null
-status=$?
-
-if test $status -eq 0
-then
-    cowpath=$(cowsay -l | grep -o -E "(/(\w|\.|_|\d)+)+")
-    cp ./bart.cow "$cowpath/"
-    status=$?
-    if test $status -eq 0
+function checkStatus(){
+    if test $1 -eq 1
     then
-        echo "Copied bart to your cowpath."
-    else
-        echo "Could not copy bart to your cowpath"
+     echo "An error occured: $2"
+     exit $1
     fi
-else
-    echo "Couldn't find cowsay executable"
-fi
+}
 
+beginning="\$the_cow = <<EOC;
+     \$thoughts
+      \$thoughts"
+
+
+ending="EOC"
+
+cowsay -l > /dev/null
+
+checkStatus $? "Cowsay not installed or not in PATH"
+    
+    cowpath=$(cowsay -l | grep -o -E "(/(\w|\.|_|\d)+)+")
+    
+for f in bartfiles/*.cow
+do
+    file_name=$(sed -e 's/bartfiles\///' <<< $f)
+    new_text="$beginning
+$(cat $f | sed -e 's/\\/\\\\/g')
+$ending"
+    echo "$new_text" > "$cowpath/$file_name"
+    checkStatus $? "Could not copy $file_name"
+    echo "Copied $file_name"
+done
+    
 if [[ $# -gt 1 ]]
     then
         export NODE_ENV=$1
@@ -25,9 +39,7 @@ fi
 
 npm start
 
-status=$?
+checkStatus $? "Server start script exited with status 1"
 
-if test $tatus -eq 0
-    echo "$NODE_ENV server started"
-
-exit $status
+echo "Bartsay started"
+exit $?

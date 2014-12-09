@@ -1,3 +1,6 @@
 {
+"db":{
+    "url":"localhost/bartsay"
+    },
 "port": 3000
 }

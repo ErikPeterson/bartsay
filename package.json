@@ -12,6 +12,7 @@
   "dependencies": {
     "browserify": "^7.0.0",
     "co-exec": "^1.1.0",
+    "co-fs": "^1.2.0",
     "domready": "^1.0.7",
     "gulp": "^3.8.10",
     "gulp-rename": "^1.2.0",

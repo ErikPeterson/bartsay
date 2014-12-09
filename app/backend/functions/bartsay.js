@@ -1,3 +1,4 @@
+var co = require('co');
 var exec = require('co-exec');
 var assign = Object.assign || require('object.assign');
 
@@ -8,12 +9,16 @@ var defaults = {
     text_to_opts: '-f bart'
 };
 
-var bartsay = function * (options){
+
+module.exports = function* (options){
     var settings = assign({}, defaults, options || {});
-    var command = settings.text_from + " " + settings.text_from_opts + " | " + settings.text_to + " " + settings.text_to_opts;
-    var bart = yield exec(command);
+    
+    var text = yield exec(settings.text_from + " " + settings.text_from_opts);
+    var formatted_text = text.replace(/"/g, '\\"')
+                    .replace(/'/g, "\'")
+                    .replace(/\n/g, '\\n')
+    var get_bart =  'echo "' + formatted_text + '" | ' + settings.text_to + " " + settings.text_to_opts;
+    var bart = yield exec(get_bart);
 
-    return bart[1];
+    return {bart: bart, text: text};
 };
-
-module.exports = bartsay;

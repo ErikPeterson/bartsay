@@ -9,14 +9,14 @@ var bart = {
     offensive: true,
     fetch: function(cb, binding){
         var fn = binding ? cb.bind(binding) : cb;
-
+        console.log('fetching...');
         qwest.post('/message', {
             text_from_opts: this.textFromOpts(),
             text_from: this.text_from,
             text_to: this.text_to,
             text_to_opts: this.textToOpts()
         }).then(this.update.bind(this))
-        .then(cb)
+        .then(fn)
         .catch(this.err("Fetching Error"));
 
     },
