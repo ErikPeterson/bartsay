@@ -1,17 +1,22 @@
 var env = process.env.NODE_ENV || 'development';
 var config = require('./config/' + env + '.json');
 
+var prepApp = require('./functions/prepApp.js');
+
 var bartsay = require('./functions/bartsay.js');
+var fortuneTeller = require('./functions/fortune.js');
+
 var selectBart = require('./functions/selectBart.js')(__dirname + '/../../bartfiles');
-var statick = require('koa-static-cache');
-var path = require('path');
 
-var handlebars = require('koa-handlebars');
 
-var route = require('koa-route');
-
+var router = require('koa-router');
+var koaBody = require('koa-body')();
 var koa = require('koa');
 var app = koa();
+
+prepApp(app);
+
+app.use(router(app));
 
 var Fortune = require('./functions/db.js')(config.db);
 
@@ -19,54 +24,51 @@ var Fortune = require('./functions/db.js')(config.db);
 
 app.name = 'BartSay';
 
-var files = {};
-app.use(statick(__dirname + '/public/css', {prefix: '/css'}, files));
-statick(__dirname + '/public/js', {prefix: '/js'}, files);
-statick(__dirname + '/public/fonts', {prefix: '/fonts'}, files);
 
-app.use(handlebars({
-    defaultLayout: "main",
-    root: __dirname,
-    viewsDir: "views",
-    layoutsDir: "views/layouts"
-    }
-));
-
-app.use(function * (next){
-    this.locals = {
-        title: app.name
-    };
-
-    yield next;
-});
-
-app.use(route.get('/', home));
-app.use(route.post('/message', message));
+app.get('/', home);
+app.post('/fortune', koaBody, getFortune);
+app.post('/fortune/:id/tag', koaBody, tagFortune);
 
 
 function *home(next){
-    var bart_to_use = selectBart();
-    var output = yield bartsay({text_to_opts: '-f ' + bart_to_use});
-    var fortune = yield Fortune.findOne('text', output.text);
-    fortune = fortune || (yield (new Fortune({text: output.text})).save());
+    var bart_to_use = yield selectBart();
+    var fortune_text = yield fortuneTeller();
+
+    var fortune = yield Fortune.findOne(fortune_text);
+
+    fortune = fortune || (yield (new Fortune(fortune_text)).save());
+
+    var bart = yield bartsay(fortune.attributes.formatted_text, fortune.primaryTag());
 
     this.locals.fortune_id = fortune.attributes._id;
-    this.locals.bart = output.bart;
+    this.locals.bart = bart.bart;
 
     yield this.render('home', this.locals);
 }
 
-function *message(next){
-    var opts = this.request.body;
-    var output = yield bartsay(opts);
-    var fortune = yield Fortune.findOne('text', output.text);
-        fortune = fortune || (yield (new Fortune({text: output.text})).save());
+function *getFortune(next){
 
-    this.body = JSON.stringify({
-        message: output.bart,
-        fortune_id: fortune.attributes._id
-    });
+    var fortune_text = yield fortuneTeller();
 
+    var fortune = yield Fortune.findOne(fortune_text);
+        fortune = fortune || (yield  (new Fortune(fortune_text)).save() );
+
+    var bart = yield bartsay(fortune.attributes.formatted_text, fortune.primaryTag());
+
+    this.body = {bart: bart.bart, fortune: fortune.toHash()};
+
+}
+
+function *tagFortune(next){
+    var id = this.params.id;
+    var tag = this.request.body.tag;
+    var fortune = yield Fortune.findOne({_id: id});
+
+    fortune = yield fortune.addTag(tag).save();
+
+    var bart = yield bartsay(fortune.attributes.formatted_text, fortune.primaryTag());
+
+    this.body = {bart: bart.bart, fortune: fortune.toHash()};
 }
 
 app.listen(config.port);

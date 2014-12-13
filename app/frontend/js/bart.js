@@ -1,27 +1,29 @@
 var qwest = require('qwest');
 
 var bart = {
-    dictionary: "",
-    message: "",
-    text_from: "fortune",
-    text_to: "cowsay",
-    cowfile: "bart",
-    offensive: true,
-    fetch: function(cb, binding){
+    fortune: {},
+    dictionary: "-a",
+    bart: "",
+    random: function(cb, binding){
         var fn = binding ? cb.bind(binding) : cb;
-        console.log('fetching...');
-        qwest.post('/message', {
-            text_from_opts: this.textFromOpts(),
-            text_from: this.text_from,
-            text_to: this.text_to,
-            text_to_opts: this.textToOpts()
-        }).then(this.update.bind(this))
+        
+        qwest.post('/fortune').then(this.update.bind(this))
         .then(fn)
         .catch(this.err("Fetching Error"));
 
     },
+    tag: function(tag, cb, binding){
+        var fn = binding ? cb.bind(binding) : cb;
+        var path = '/fortune/' + this.fortune._id + '/tag';
+
+        qwest.post(path, {
+            tag: tag
+        }).then(this.update.bind(this))
+        .then(fn)
+        .catch(this.err("Tagging Erorr"));
+    },
     render: function(){
-        return '<pre class="bart">' + this.message + '</pre>';
+        return '<pre class="bart">' + this.bart + '</pre>';
     },
     err: function(type){
         return function(message){
@@ -35,12 +37,6 @@ var bart = {
         for(k in json){
             this[k] = json[k];
         }
-    },
-    textFromOpts: function(){
-        return this.dictionary + " " + this.offensive ? "-a" : "";
-    },
-    textToOpts: function(){
-        return "-f " + this.cowfile;
     }
 };
 
